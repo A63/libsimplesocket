@@ -68,7 +68,7 @@ ssize_t simplesocket_read(SimpleSocket* ss, void* buf, size_t len)
   {
     return gnutls_record_recv(ss->tls, buf, len);
   }else{
-    return read(ss->sock, buf, len);
+    return readwrap(ss, buf, len);
   }
 }
 
@@ -78,7 +78,7 @@ ssize_t simplesocket_write(SimpleSocket* ss, const void* buf, size_t len)
   {
     return gnutls_record_send(ss->tls, buf, len);
   }else{
-    return write(ss->sock, buf, len);
+    return writewrap(ss, buf, len);
   }
 }
 
