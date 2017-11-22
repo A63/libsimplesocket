@@ -17,7 +17,10 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
+#include <fcntl.h>
 #include <netdb.h>
+#include <sys/stat.h>
 #include <sys/socket.h>
 #include <gnutls/gnutls.h>
 #include "socket.h"
@@ -93,6 +96,17 @@ int simplesocket_close(SimpleSocket* ss)
   return r;
 }
 
+static void loadfile(gnutls_datum_t* data, const char* file)
+{
+  struct stat st;
+  if(stat(file, &st)){perror(file); return;}
+  data->size=st.st_size;
+  data->data=malloc(data->size);
+  int f=open(file, O_RDONLY);
+  read(f, data->data, data->size);
+  close(f);
+}
+
 int simplesocket_starttls(SimpleSocket* ss, const char* cert, const char* key)
 {
   gnutls_global_init();
@@ -100,11 +114,17 @@ int simplesocket_starttls(SimpleSocket* ss, const char* cert, const char* key)
   gnutls_certificate_allocate_credentials(&cred);
   if(cert && key)
   {
-    if(gnutls_certificate_set_x509_key_file(cred, cert, key, GNUTLS_X509_FMT_PEM))
+    gnutls_datum_t certdata={.data=(unsigned char*)cert, .size=strlen(cert)};
+    gnutls_datum_t keydata={.data=(unsigned char*)key, .size=strlen(key)};
+    if(strncmp(cert, "-----BEGIN ", 11)){loadfile(&certdata, cert);}
+    if(strncmp(key, "-----BEGIN ", 11)){loadfile(&keydata, key);}
+    if(gnutls_certificate_set_x509_key_mem(cred, &certdata, &keydata, GNUTLS_X509_FMT_PEM))
     {
       printf("Failed to load cert/key files '%s' and '%s'\n", cert, key);
       return -1;
     }
+    if(certdata.data!=(void*)cert){free(certdata.data);}
+    if(keydata.data!=(void*)key){free(keydata.data);}
   }
   gnutls_priority_t prio;
   gnutls_priority_init(&prio, "NORMAL:%COMPAT", 0);
