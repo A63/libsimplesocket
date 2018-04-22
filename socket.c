@@ -1,6 +1,6 @@
 /*
     libsimplesocket, abstract socket networking that seamlessly allows both unencrypted and encrypted connections
-    Copyright (C) 2017  alicia@ion.nu
+    Copyright (C) 2017-2018  alicia@ion.nu
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Affero General Public License version 3
@@ -145,6 +145,7 @@ int simplesocket_starttls(SimpleSocket* ss, const char* cert, const char* key)
   {
     printf("TLS handshake failed: %i\n", ret);
     gnutls_deinit(ss->tls);
+    ss->tls=0;
   }
   return ret;
 }
